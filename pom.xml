@@ -13,7 +13,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/shanifm2002/demojenk</url>
+            <url>https://maven.pkg.github.com/shanifm2002/demo-jenk</url>
         </repository>
     </distributionManagement>
 
