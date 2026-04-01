@@ -1,58 +1,41 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'maven-01'   // 👈 your Maven name
-        jdk 'JDK'          // keep your configured JDK name
-    }
-
     environment {
-        GITHUB_CREDENTIALS = credentials('github-creds')
+        GITHUB_CREDS = credentials('github-packages-cred')
+        MAVEN_HOME   = tool name: 'maven3'
+        PATH         = "${JAVA_HOME}/bin:${PATH}"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/shanifm2002/demo-jenk.git'
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build & Deploy') {
             steps {
-                sh 'mvn clean compile'
-            }
-        }
+                configFileProvider([configFile(fileId: 'maven-github-settings', variable: 'MAVEN_SETTINGS')]) {
+                    sh """
+                        export GH_USER=${GITHUB_CREDS_USR}
+                        export GH_TOKEN=${GITHUB_CREDS_PSW}
 
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('Package') {
-            steps {
-                sh 'mvn package'
-            }
-        }
-
-        stage('Deploy to GitHub Packages') {
-            steps {
-                sh """
-                mvn deploy \
-                -Dusername=$GITHUB_CREDENTIALS_USR \
-                -Dpassword=$GITHUB_CREDENTIALS_PSW
-                """
+                        ${MAVEN_HOME}/bin/mvn -s $MAVEN_SETTINGS -B clean package
+                        ${MAVEN_HOME}/bin/mvn -s $MAVEN_SETTINGS -B deploy
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Build & Deployment Successful!'
+            echo "✅ Build and deployment to GitHub Packages completed successfully."
         }
         failure {
-            echo 'Build Failed!'
+            echo "❌ Pipeline failed. Check the console output for details."
         }
     }
 }
